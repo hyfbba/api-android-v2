@@ -1,9 +1,9 @@
-name: Build api APK
+name: Build API APK
 
 on:
   push:
     paths:
-      - "api-android-0.1.1-source.zip"
+      - "api-android-0.1.2-source.zip"
       - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
@@ -28,20 +28,32 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK 36
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Extract project
         run: |
           rm -rf build-src
           mkdir -p build-src
-          unzip -q api-android-0.1.1-source.zip -d build-src
+          unzip -q api-android-0.1.2-source.zip -d build-src
           test -f build-src/api-android/settings.gradle.kts
 
-      - name: Test and build
+      - name: Grant Gradle permission
         working-directory: build-src/api-android
-        run: |
-          chmod +x gradlew
-          ./gradlew test lint assembleDebug --stacktrace
+        run: chmod +x gradlew
+
+      - name: Run tests
+        working-directory: build-src/api-android
+        run: ./gradlew test --stacktrace
+
+      - name: Run lint
+        working-directory: build-src/api-android
+        run: ./gradlew lint --stacktrace
+
+      - name: Build debug APK
+        working-directory: build-src/api-android
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
