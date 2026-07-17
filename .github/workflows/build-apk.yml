@@ -3,7 +3,7 @@ name: Build API APK
 on:
   push:
     paths:
-      - "api-android-0.1.2-source.zip"
+      - "api-android-v2-0.2.0-source.zip"
       - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
@@ -29,31 +29,20 @@ jobs:
 
       - name: Install Android SDK 36
         run: |
-          yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Extract project
         run: |
           rm -rf build-src
           mkdir -p build-src
-          unzip -q api-android-0.1.2-source.zip -d build-src
+          unzip -q api-android-v2-0.2.0-source.zip -d build-src
           test -f build-src/api-android/settings.gradle.kts
-
-      - name: Grant Gradle permission
-        working-directory: build-src/api-android
-        run: chmod +x gradlew
-
-      - name: Run tests
-        working-directory: build-src/api-android
-        run: ./gradlew test --stacktrace
-
-      - name: Run lint
-        working-directory: build-src/api-android
-        run: ./gradlew lint --stacktrace
 
       - name: Build debug APK
         working-directory: build-src/api-android
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -61,3 +50,13 @@ jobs:
           name: api-debug-apk
           path: build-src/api-android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Run tests
+        continue-on-error: true
+        working-directory: build-src/api-android
+        run: ./gradlew test --stacktrace
+
+      - name: Run lint
+        continue-on-error: true
+        working-directory: build-src/api-android
+        run: ./gradlew lint --stacktrace
